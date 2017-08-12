@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using UnityEngine;
 namespace com.surfm.firebase.geofire {
     public class GeoQuery {
-        static object Lock = new object();
+        internal object Lock = new object();
         public class LocationInfo {
             public readonly GeoLocation location;
             public readonly bool inGeoQuery;
@@ -22,48 +22,9 @@ namespace com.surfm.firebase.geofire {
         }
 
 
-        public class ChildEventListener {
 
 
-            private GeoQuery me;
-
-            public ChildEventListener(GeoQuery gq) {
-                me = gq;
-                //TODO
-                //keyRef.ChildRemoved += (s, e) => {
-                // onNodeChange(s, e, me.childRemoved);
-                //};
-                //System.EventHandler<ValueChangedEventArgs> ValueChanged = onDataChange;
-            }
-
-
-
-            //public void onNodeChange(object sender, ChildChangedEventArgs e, Action<DataSnapshot> da) {
-            //    if (e.DatabaseError == null) {
-            //        onCancelled(e.DatabaseError);
-            //    } else {
-            //        lock (Lock) {
-
-            //        }
-            //    }
-            //}
-
-
-
-            public void onCancelled(DatabaseError databaseError) {
-            }
-
-            internal void removeEventListener(Query q) {
-                //TODO  q.ChildAdded -= 
-            }
-
-            internal void addChildEventListener(Query firebaseQuery) {
-                //TODO
-                throw new NotImplementedException();
-            }
-        }
-
-        private readonly ChildEventListener childEventLister;
+        private readonly GeoQueryChildEventListener childEventLister;
         private readonly GeoFire geoFire;
         private readonly HashSet<GeoQueryEventListener> eventListeners = new HashSet<GeoQueryEventListener>();
         private readonly Dictionary<GeoHashQuery, Query> firebaseQueries = new Dictionary<GeoHashQuery, Query>();
@@ -83,12 +44,12 @@ namespace com.surfm.firebase.geofire {
          * @param center The center of this query
          * @param radius The radius of this query, in kilometers
          */
-        GeoQuery(GeoFire geoFire, GeoLocation center, double radius) {
+        internal GeoQuery(GeoFire geoFire, GeoLocation center, double radius) {
             this.geoFire = geoFire;
             this.center = center;
             // convert from kilometers to meters
             this.radius = radius * 1000;
-            childEventLister = new ChildEventListener(this);
+            childEventLister = new GeoQueryChildEventListener(this);
         }
 
         private bool locationIsInQuery(GeoLocation location) {
@@ -96,7 +57,7 @@ namespace com.surfm.firebase.geofire {
         }
 
         private void updateLocationInfo(string key, GeoLocation location) {
-            LocationInfo oldInfo = this.locationInfos[(key)];
+            LocationInfo oldInfo = GeoUtils.getMapSafe(key, locationInfos);
             bool isNew = (oldInfo == null);
             bool changedLocation = (oldInfo != null && !oldInfo.location.Equals(location));
             bool wasInQuery = (oldInfo != null && oldInfo.inGeoQuery);
@@ -197,7 +158,7 @@ namespace com.surfm.firebase.geofire {
             foreach (GeoHashQuery query in oldQueries) {
                 if (!newQueries.Contains(query)) {
                     //firebaseQueries[(query)].removeEventListener(this.childEventLister);
-                    childEventLister.removeEventListener(firebaseQueries[(query)]);
+                    childEventLister.removeEventListener(GeoUtils.getMapSafe(query, firebaseQueries));
                     firebaseQueries.Remove(query);
                     outstandingQueries.Remove(query);
                 }
@@ -213,12 +174,12 @@ namespace com.surfm.firebase.geofire {
                 }
             }
             foreach (string key in locationInfos.Keys) {
-                updateLocationInfo(key, locationInfos[key].location);
+                updateLocationInfo(key, GeoUtils.getMapSafe(key, locationInfos).location);
             }
             // remove locations that are not part of the geo query anymore
             List<string> keys = new List<string>(locationInfos.Keys);
             keys.ForEach(k => {
-                LocationInfo v = locationInfos[k];
+                LocationInfo v = GeoUtils.getMapSafe(k, locationInfos);
                 if (!geoHashQueriesContainGeoHash(v.geoHash)) {
                     locationInfos.Remove(k);
                 }
@@ -226,7 +187,7 @@ namespace com.surfm.firebase.geofire {
             checkAndFireReady();
         }
 
-        private void childAdded(DataSnapshot dataSnapshot) {
+        internal void childAdded(DataSnapshot dataSnapshot) {
             GeoLocation location = GeoFire.getLocationValue(dataSnapshot);
             if (location != null) {
                 this.updateLocationInfo(dataSnapshot.Key, location);
@@ -235,7 +196,7 @@ namespace com.surfm.firebase.geofire {
             }
         }
 
-        private void childChanged(DataSnapshot dataSnapshot) {
+        internal void childChanged(DataSnapshot dataSnapshot) {
             GeoLocation location = GeoFire.getLocationValue(dataSnapshot);
             if (location != null) {
                 this.updateLocationInfo(dataSnapshot.Key, location);
@@ -244,9 +205,9 @@ namespace com.surfm.firebase.geofire {
             }
         }
 
-        private void childRemoved(DataSnapshot dataSnapshot) {
+        internal void childRemoved(DataSnapshot dataSnapshot) {
             string key = dataSnapshot.Key;
-            LocationInfo info = this.locationInfos[key];
+            LocationInfo info = GeoUtils.getMapSafe(key, locationInfos);
             if (info != null) {
                 ValueChangedListenerSetup vs = new ValueChangedListenerSetup(geoFire.getDatabaseRefForKey(key), true, (s) => {
                     if (s.DatabaseError == null) {
@@ -254,7 +215,7 @@ namespace com.surfm.firebase.geofire {
                             GeoLocation location = GeoFire.getLocationValue(dataSnapshot);
                             GeoHash hash = (location != null) ? new GeoHash(location) : null;
                             if (hash == null || !geoHashQueriesContainGeoHash(hash)) {
-                                LocationInfo _info = locationInfos.ContainsKey(key) ? locationInfos[(key)] : null;
+                                LocationInfo _info = GeoUtils.getMapSafe(key, locationInfos);
                                 locationInfos.Remove(key);
                                 if (_info != null && _info.inGeoQuery) {
                                     foreach (GeoQueryEventListener listener in eventListeners) {
@@ -280,28 +241,29 @@ namespace com.surfm.firebase.geofire {
          */
         public void addGeoQueryEventListener(GeoQueryEventListener listener) {
             lock (Lock) {
-            }
-            if (eventListeners.Contains(listener)) {
-                throw new Exception("Added the same listener twice to a GeoQuery!");
-            }
-            eventListeners.Add(listener);
-            if (this.queries == null) {
-                this.setupQueries();
-            } else {
-                foreach (string key in locationInfos.Keys) {
-                    LocationInfo info = locationInfos[key];
-                    if (info.inGeoQuery) {
+
+                if (eventListeners.Contains(listener)) {
+                    throw new Exception("Added the same listener twice to a GeoQuery!");
+                }
+                eventListeners.Add(listener);
+                if (this.queries == null) {
+                    this.setupQueries();
+                } else {
+                    foreach (string key in locationInfos.Keys) {
+                        LocationInfo info = GeoUtils.getMapSafe(key, locationInfos);
+                        if (info.inGeoQuery) {
+                            geoFire.raiseEvent(() => {
+                                listener.onKeyEntered(key, info.location);
+                            });
+                        }
+                    }
+
+
+                    if (canFireReady()) {
                         geoFire.raiseEvent(() => {
-                            listener.onKeyEntered(key, info.location);
+                            listener.onGeoQueryReady();
                         });
                     }
-                }
-
-
-                if (canFireReady()) {
-                    geoFire.raiseEvent(() => {
-                        listener.onGeoQueryReady();
-                    });
                 }
             }
         }
@@ -313,40 +275,48 @@ namespace com.surfm.firebase.geofire {
          *
          * @param listener The listener to remove
          */
-        public synchronized void removeGeoQueryEventListener(GeoQueryEventListener listener) {
-            if (!eventListeners.contains(listener)) {
-                throw new IllegalArgumentException("Trying to remove listener that was removed or not added!");
-            }
-            eventListeners.remove(listener);
-            if (!this.hasListeners()) {
-                reset();
+        public void removeGeoQueryEventListener(GeoQueryEventListener listener) {
+            lock (Lock) {
+                if (!eventListeners.Contains(listener)) {
+                    throw new Exception("Trying to remove listener that was removed or not added!");
+                }
+                eventListeners.Remove(listener);
+                if (!this.hasListeners()) {
+                    reset();
+                }
             }
         }
 
         /**
          * Removes all event listeners from this GeoQuery.
          */
-        public synchronized void removeAllListeners() {
-            eventListeners.clear();
-            reset();
+        public void removeAllListeners() {
+            lock (Lock) {
+                eventListeners.Clear();
+                reset();
+            }
         }
 
         /**
          * Returns the current center of this query.
          * @return The current center
          */
-        public synchronized GeoLocation getCenter() {
-            return center;
+        public GeoLocation getCenter() {
+            lock (Lock) {
+                return center;
+            }
         }
 
         /**
          * Sets the new center of this query and triggers new events if necessary.
          * @param center The new center
          */
-        public synchronized void setCenter(GeoLocation center) {
-            this.center = center;
-            if (this.hasListeners()) {
-                this.setupQueries();
+        public void setCenter(GeoLocation center) {
+            lock (Lock) {
+                this.center = center;
+                if (this.hasListeners()) {
+                    this.setupQueries();
+                }
             }
         }
 
@@ -354,20 +324,24 @@ namespace com.surfm.firebase.geofire {
          * Returns the radius of the query, in kilometers.
          * @return The radius of this query, in kilometers
          */
-        public synchronized double getRadius() {
+        public double getRadius() {
             // convert from meters
-            return radius / 1000;
+            lock (Lock) {
+                return radius / 1000;
+            }
         }
 
         /**
          * Sets the radius of this query, in kilometers, and triggers new events if necessary.
          * @param radius The new radius value of this query in kilometers
          */
-        public synchronized void setRadius(double radius) {
+        public void setRadius(double radius) {
             // convert to meters
-            this.radius = radius * 1000;
-            if (this.hasListeners()) {
-                this.setupQueries();
+            lock (Lock) {
+                this.radius = radius * 1000;
+                if (this.hasListeners()) {
+                    this.setupQueries();
+                }
             }
         }
 
@@ -376,12 +350,14 @@ namespace com.surfm.firebase.geofire {
          * @param center The new center
          * @param radius The new radius value of this query in kilometers
          */
-        public synchronized void setLocation(GeoLocation center, double radius) {
-            this.center = center;
-            // convert radius to meters
-            this.radius = radius * 1000;
-            if (this.hasListeners()) {
-                this.setupQueries();
+        public void setLocation(GeoLocation center, double radius) {
+            lock (Lock) {
+                this.center = center;
+                // convert radius to meters
+                this.radius = radius * 1000;
+                if (this.hasListeners()) {
+                    this.setupQueries();
+                }
             }
         }
     }

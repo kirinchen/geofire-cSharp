@@ -44,7 +44,7 @@ namespace com.surfm.firebase.geofire {
 
             public void onDataChange(object sender, ValueChangedEventArgs e) {
                 keyRef.ValueChanged -= (this.onDataChange);
-                if (e.DatabaseError == null) {
+                if (e.DatabaseError != null) {
                     onCancelled(e.DatabaseError);
                 } else {
                     onDataChange(e.Snapshot);
@@ -117,11 +117,10 @@ namespace com.surfm.firebase.geofire {
             }
             DatabaseReference keyRef = this.getDatabaseRefForKey(key);
             GeoHash geoHash = new GeoHash(location);
-            Dictionary<string, object> updates = new Dictionary<string, object>();
-            updates.Add("g", geoHash.getGeoHashString());
-            updates.Add("l", new List<object>(new object[] { location.latitude, location.longitude }));
-
-            keyRef.SetValueAsync(updates, geoHash.getGeoHashString());
+            //Dictionary<string, object> updates = new Dictionary<string, object>();
+            //updates.Add("g", geoHash.getGeoHashString());
+            //updates.Add("l", new List<object>(new object[] { location.latitude, location.longitude }));
+            keyRef.SetValueAsync(GeoLocationUtils.getInstance().toFireObj(geoHash.getGeoHashString(), location), geoHash.getGeoHashString());
         }
 
 
