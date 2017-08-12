@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 namespace com.surfm.firebase.geofire {
 
-    public class UnityEventRaiser : MonoBehaviour, EventRaiser {
+    public class BaseEventRaiser :  EventRaiser {
         public void raiseEvent(Action r) {
             r();
         }

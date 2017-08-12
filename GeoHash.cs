@@ -66,7 +66,7 @@ namespace com.surfm.firebase.geofire.core {
             this.geoHash = hash;
         }
 
-        public string getGeoHashstring() {
+        public string getGeoHashString() {
             return this.geoHash;
         }
 

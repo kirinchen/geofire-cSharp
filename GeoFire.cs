@@ -1,4 +1,5 @@
-﻿using Firebase.Database;
+﻿using com.surfm.firebase.geofire.core;
+using Firebase.Database;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -29,16 +30,20 @@ namespace com.surfm.firebase.geofire {
         /**
          * A small wrapper class to forward any events to the LocationEventListener.
          */
-        private class LocationValueEventListener {
+        public class LocationValueEventListener {
 
             private LocationCallback callback;
+            private DatabaseReference keyRef;
 
-            LocationValueEventListener(LocationCallback callback) {
+            public LocationValueEventListener(LocationCallback callback, DatabaseReference keyRef) {
                 this.callback = callback;
+                this.keyRef = keyRef;
+                keyRef.ValueChanged += (this.onDataChange);
                 //System.EventHandler<ValueChangedEventArgs> ValueChanged = onDataChange;
             }
 
             public void onDataChange(object sender, ValueChangedEventArgs e) {
+                keyRef.ValueChanged -= (this.onDataChange);
                 if (e.DatabaseError == null) {
                     onCancelled(e.DatabaseError);
                 } else {
@@ -65,23 +70,13 @@ namespace com.surfm.firebase.geofire {
             }
         }
 
-        static GeoLocation getLocationValue(DataSnapshot dataSnapshot) {
+        public static GeoLocation getLocationValue(DataSnapshot dataSnapshot) {
             try {
-                GenericTypeIndicator<Map<string, Object>> typeIndicator = new GenericTypeIndicator<Map<string, Object>>() { };
-                Map<string, Object> data = dataSnapshot.getValue(typeIndicator);
-                List <?> location = (List <?>) data.get("l");
-                Number latitudeObj = (Number)location.get(0);
-                Number longitudeObj = (Number)location.get(1);
-                double latitude = latitudeObj.doubleValue();
-                double longitude = longitudeObj.doubleValue();
-                if (location.size() == 2 && GeoLocation.coordinatesValid(latitude, longitude)) {
-                    return new GeoLocation(latitude, longitude);
-                } else {
-                    return null;
-                }
-            } catch (NullPointerException e) {
+                return GeoLocationUtils.getInstance().parse(dataSnapshot.Value);
+
+            } catch (NullReferenceException e) {
                 return null;
-            } catch (ClassCastException e) {
+            } catch (InvalidCastException e) {
                 return null;
             }
         }
@@ -96,14 +91,7 @@ namespace com.surfm.firebase.geofire {
          */
         public GeoFire(DatabaseReference databaseReference) {
             this.databaseReference = databaseReference;
-            EventRaiser eventRaiser;
-            try {
-                eventRaiser = new AndroidEventRaiser();
-            } catch (Throwable e) {
-                // We're not on Android, use the ThreadEventRaiser
-                eventRaiser = new ThreadEventRaiser();
-            }
-            this.eventRaiser = eventRaiser;
+            this.eventRaiser = new BaseEventRaiser();
         }
 
         /**
@@ -114,7 +102,7 @@ namespace com.surfm.firebase.geofire {
         }
 
         DatabaseReference getDatabaseRefForKey(string key) {
-            return this.databaseReference.child(key);
+            return this.databaseReference.Child(key);
         }
 
         /**
@@ -124,98 +112,63 @@ namespace com.surfm.firebase.geofire {
          * @param location The location of this key
          */
         public void setLocation(string key, GeoLocation location) {
-            this.setLocation(key, location, null);
+            if (key == null) {
+                throw new NullReferenceException();
+            }
+            DatabaseReference keyRef = this.getDatabaseRefForKey(key);
+            GeoHash geoHash = new GeoHash(location);
+            Dictionary<string, object> updates = new Dictionary<string, object>();
+            updates.Add("g", geoHash.getGeoHashString());
+            updates.Add("l", new List<object>(new object[] { location.latitude, location.longitude }));
+
+            keyRef.SetValueAsync(updates, geoHash.getGeoHashString());
+        }
+
+
+
+        /**
+         * Removes the location for a key from this GeoFire.
+         *
+         * @param key The key to remove from this GeoFire
+         */
+        public void removeLocation(string key) {
+            if (key == null) {
+                throw new NullReferenceException();
+            }
+            DatabaseReference keyRef = this.getDatabaseRefForKey(key);
+
+            keyRef.SetValueAsync(null);
+        }
+
+
+
+        /**
+         * Gets the current location for a key and calls the callback with the current value.
+         *
+         * @param key      The key whose location to get
+         * @param callback The callback that is called once the location is retrieved
+         */
+        public void getLocation(string key, LocationCallback callback) {
+            DatabaseReference keyRef = this.getDatabaseRefForKey(key);
+            LocationValueEventListener valueListener = new LocationValueEventListener(callback, keyRef);
+            
         }
 
         /**
-         * Sets the location for a given key.
+         * Returns a new Query object centered at the given location and with the given radius.
          *
-         * @param key                The key to save the location for
-         * @param location           The location of this key
-         * @param completionListener A listener that is called once the location was successfully saved on the server or an
-         *                           error occurred
+         * @param center The center of the query
+         * @param radius The radius of the query, in kilometers
+         * @return The new GeoQuery object
          */
-        public void setLocation(readonly string key, readonly GeoLocation location, readonly CompletionListener completionListener) {
-        if (key == null) {
-            throw new NullPointerException();
-    }
-    DatabaseReference keyRef = this.getDatabaseRefForKey(key);
-    GeoHash geoHash = new GeoHash(location);
-    Map<string, Object> updates = new HashMap<string, Object>();
-    updates.put("g", geoHash.getGeoHashstring());
-        updates.put("l", Arrays.asList(location.latitude, location.longitude));
-        if (completionListener != null) {
-            keyRef.setValue(updates, geoHash.getGeoHashstring(), new DatabaseReference.CompletionListener() {
-                @Override
-                public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-        completionListener.onComplete(key, databaseError);
-    }
-});
-        } else {
-            keyRef.setValue(updates, geoHash.getGeoHashstring());
+        public GeoQuery queryAtLocation(GeoLocation center, double radius) {
+            return new GeoQuery(this, center, radius);
+        }
+
+        public void raiseEvent(Action r) {
+            this.eventRaiser.raiseEvent(r);
         }
     }
 
-    /**
-     * Removes the location for a key from this GeoFire.
-     *
-     * @param key The key to remove from this GeoFire
-     */
-    public void removeLocation(string key) {
-    this.removeLocation(key, null);
 }
 
-/**
- * Removes the location for a key from this GeoFire.
- *
- * @param key                The key to remove from this GeoFire
- * @param completionListener A completion listener that is called once the location is successfully removed
- *                           from the server or an error occurred
- */
-public void removeLocation(readonly string key, readonly CompletionListener completionListener) {
-    if (key == null) {
-        throw new NullPointerException();
-    }
-    DatabaseReference keyRef = this.getDatabaseRefForKey(key);
-    if (completionListener != null) {
-        keyRef.setValue(null, new DatabaseReference.CompletionListener() {
-                @Override
-                public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-    completionListener.onComplete(key, databaseError);
-}
-            });
-        } else {
-            keyRef.setValue(null);
-        }
-    }
-
-    /**
-     * Gets the current location for a key and calls the callback with the current value.
-     *
-     * @param key      The key whose location to get
-     * @param callback The callback that is called once the location is retrieved
-     */
-    public void getLocation(string key, LocationCallback callback) {
-    DatabaseReference keyRef = this.getDatabaseRefForKey(key);
-    LocationValueEventListener valueListener = new LocationValueEventListener(callback);
-    keyRef.addListenerForSingleValueEvent(valueListener);
-}
-
-/**
- * Returns a new Query object centered at the given location and with the given radius.
- *
- * @param center The center of the query
- * @param radius The radius of the query, in kilometers
- * @return The new GeoQuery object
- */
-public GeoQuery queryAtLocation(GeoLocation center, double radius) {
-    return new GeoQuery(this, center, radius);
-}
-
-void raiseEvent(Runnable r) {
-    this.eventRaiser.raiseEvent(r);
-}
-}
-
-}
-    

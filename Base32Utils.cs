@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace com.surfm.firebase.geofire.util {
-    public class Base32Utils : MonoBehaviour {
+    public class Base32Utils  {
         /* number of bits per base 32 character */
         public static readonly int BITS_PER_BASE32_CHAR = 5;
 
