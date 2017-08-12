@@ -101,7 +101,7 @@ namespace com.surfm.firebase.geofire {
             return this.databaseReference;
         }
 
-        DatabaseReference getDatabaseRefForKey(string key) {
+        public DatabaseReference getDatabaseRefForKey(string key) {
             return this.databaseReference.Child(key);
         }
 
