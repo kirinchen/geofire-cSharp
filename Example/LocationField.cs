@@ -10,7 +10,7 @@ namespace com.surfm.firebase.geofire.test {
         public float speed = 0.1f;
         private Toggle toggle;
         private InputField inputField;
-
+        internal Action onChangeAction = () => { };
 
         void Awake() {
             toggle = GetComponentInChildren<Toggle>();
@@ -25,6 +25,7 @@ namespace com.surfm.firebase.geofire.test {
             if (Mathf.Abs(x) > 0 || Mathf.Abs(y) > 0) {
                 GeoLocation gl = getLocation();
                 inputField.text = Math.Round(gl.latitude + x, 6) + "," + Math.Round(gl.longitude + y, 6);
+                onChangeAction();
             }
         }
 

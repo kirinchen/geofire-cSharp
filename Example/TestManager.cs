@@ -12,6 +12,7 @@ namespace com.surfm.firebase.geofire.test {
         public LocationField putLoacation;
         public LocationField ceneterLocation;
         private GeoFire geoFire;
+        private GeoQuery query;
         DependencyStatus dependencyStatus = DependencyStatus.UnavailableOther;
         void Start() {
             dependencyStatus = FirebaseApp.CheckDependencies();
@@ -28,6 +29,13 @@ namespace com.surfm.firebase.geofire.test {
             } else {
                 initializeFirebase();
             }
+            ceneterLocation.onChangeAction = onCenterChange;
+        }
+
+        private void onCenterChange() {
+            if (query != null) {
+                query.setCenter(ceneterLocation.getLocation());
+            }
         }
 
         private void initializeFirebase() {
@@ -35,7 +43,7 @@ namespace com.surfm.firebase.geofire.test {
             app.SetEditorDatabaseUrl("https://apphi-224fb.firebaseio.com/");
             if (app.Options.DatabaseUrl != null) app.SetEditorDatabaseUrl(app.Options.DatabaseUrl);
             geoFire = new GeoFire(FirebaseDatabase.DefaultInstance.GetReference("/geo"));
-            GeoQuery query = geoFire.queryAtLocation(ceneterLocation.getLocation(), 10);
+            query = geoFire.queryAtLocation(ceneterLocation.getLocation(), 10);
             query.addGeoQueryEventListener(this);
         }
 

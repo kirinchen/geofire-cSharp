@@ -85,7 +85,8 @@ namespace com.surfm.firebase.geofire {
                 }
             }
             LocationInfo newInfo = new LocationInfo(location, this.locationIsInQuery(location));
-            this.locationInfos.Add(key, newInfo);
+            //this.locationInfos.Add(key, newInfo);
+            GeoUtils.setMapSafe(key, newInfo, locationInfos);
         }
 
         private bool geoHashQueriesContainGeoHash(GeoHash geoHash) {
@@ -170,7 +171,8 @@ namespace com.surfm.firebase.geofire {
                     Query firebaseQuery = databaseReference.OrderByChild("g").StartAt(query.getStartValue()).EndAt(query.getEndValue());
                     childEventLister.addChildEventListener(firebaseQuery);
                     addValueToReadyListener(firebaseQuery, query);
-                    firebaseQueries.Add(query, firebaseQuery);
+                    //firebaseQueries.Add(query, firebaseQuery);
+                    GeoUtils.setMapSafe(query, firebaseQuery, firebaseQueries);
                 }
             }
             foreach (string key in locationInfos.Keys) {
