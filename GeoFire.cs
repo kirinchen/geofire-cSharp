@@ -72,7 +72,7 @@ namespace com.surfm.firebase.geofire {
 
         public static GeoLocation getLocationValue(DataSnapshot dataSnapshot) {
             try {
-                return GeoLocationUtils.getInstance().parse(dataSnapshot.Value);
+                return GeoLocationConverter.getInstance().parse(dataSnapshot.Value);
 
             } catch (NullReferenceException e) {
                 return null;
@@ -120,7 +120,7 @@ namespace com.surfm.firebase.geofire {
             //Dictionary<string, object> updates = new Dictionary<string, object>();
             //updates.Add("g", geoHash.getGeoHashString());
             //updates.Add("l", new List<object>(new object[] { location.latitude, location.longitude }));
-            keyRef.SetValueAsync(GeoLocationUtils.getInstance().toFireObj(geoHash.getGeoHashString(), location), geoHash.getGeoHashString());
+            keyRef.SetValueAsync(GeoLocationConverter.getInstance().toFireObj(geoHash.getGeoHashString(), location), geoHash.getGeoHashString());
         }
 
 
