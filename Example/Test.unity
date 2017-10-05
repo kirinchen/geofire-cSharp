@@ -419,6 +419,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b469af63625d9064aaac780f13cec039, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  geoFireUrl: https://apphi-224fb.firebaseio.com/
   putLoacation: {fileID: 884495931}
   ceneterLocation: {fileID: 703761780}
 --- !u!1 &657086807
