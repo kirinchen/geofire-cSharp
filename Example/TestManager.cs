@@ -43,7 +43,7 @@ namespace com.surfm.firebase.geofire.test {
             app.SetEditorDatabaseUrl("https://apphi-224fb.firebaseio.com/");
             if (app.Options.DatabaseUrl != null) app.SetEditorDatabaseUrl(app.Options.DatabaseUrl);
             geoFire = new GeoFire(FirebaseDatabase.DefaultInstance.GetReference("/geo"));
-            query = geoFire.queryAtLocation(ceneterLocation.getLocation(), 10);
+            query = geoFire.queryAtLocation(ceneterLocation.getLocation(), 200);
             query.addGeoQueryEventListener(this);
         }
 

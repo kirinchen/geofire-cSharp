@@ -5,18 +5,18 @@ using System.Collections.Generic;
 using UnityEngine;
 namespace com.surfm.firebase.geofire {
 
-    public class GeoLocationConverter {
+    public class GeoLocationObjConverter {
 
         public interface Convert {
             GeoLocation parse(object o);
 
             object toFireObj(string hash, GeoLocation gl);
         }
-        private static GeoLocationConverter instance;
+        private static GeoLocationObjConverter instance;
 
         private Convert handler;
 
-        private GeoLocationConverter(Convert h) {
+        private GeoLocationObjConverter(Convert h) {
             handler = h;
         }
 
@@ -29,10 +29,10 @@ namespace com.surfm.firebase.geofire {
         }
 
         public static void initInstance(Convert h) {
-            instance = new GeoLocationConverter(h);
+            instance = new GeoLocationObjConverter(h);
         }
 
-        public static GeoLocationConverter getInstance() {
+        public static GeoLocationObjConverter getInstance() {
             if (instance == null) {
                 initInstance(new SampleHandler());
             }
