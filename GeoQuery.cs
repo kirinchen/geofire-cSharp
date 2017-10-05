@@ -175,9 +175,9 @@ namespace com.surfm.firebase.geofire {
                     GeoUtils.setMapSafe(query, firebaseQuery, firebaseQueries);
                 }
             }
-            foreach (string key in locationInfos.Keys) {
+            GeoUtils.foreachSafe(locationInfos.Keys, key => {
                 updateLocationInfo(key, GeoUtils.getMapSafe(key, locationInfos).location);
-            }
+            });
             // remove locations that are not part of the geo query anymore
             List<string> keys = new List<string>(locationInfos.Keys);
             keys.ForEach(k => {

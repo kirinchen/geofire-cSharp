@@ -56,9 +56,15 @@ namespace com.surfm.firebase.geofire.util {
         }
 
         public static void setMapSafe<K, E>(K key, E v, Dictionary<K, E> map) {
-            if (!map.ContainsKey(key)) {
-                map.Add(key,v);
+            if (map.ContainsKey(key)) {
+                map.Remove(key);
             }
+            map.Add(key, v);
+        }
+
+        public static void foreachSafe<T>(ICollection<T> c, Action<T> a) {
+            List<T> l = new List<T>(c);
+            l.ForEach(a);
         }
 
         public static E getMapSafe<K, E>(K key, Dictionary<K, E> map) {
