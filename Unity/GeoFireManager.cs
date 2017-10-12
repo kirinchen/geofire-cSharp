@@ -28,7 +28,7 @@ namespace com.surfm.firebase.geofire {
         }
 
         public void onCenterLocationChange() {
-            Debug.Log("onCenterLocationChange");
+           // Debug.Log("onCenterLocationChange");
             if (query == null) {
                 query = geoFire.queryAtLocation(centerFunc(), 1);
                 query.addGeoQueryEventListener(this);
@@ -59,8 +59,22 @@ namespace com.surfm.firebase.geofire {
             app.SetEditorDatabaseUrl(geoFireUrl);
             if (app.Options.DatabaseUrl != null) app.SetEditorDatabaseUrl(app.Options.DatabaseUrl);
             geoFire = new GeoFire(FirebaseDatabase.DefaultInstance.GetReference("/geo"));
-            //  query = geoFire.queryAtLocation(ceneterLocation.getLocation(), 2);
-           // query.addGeoQueryEventListener(this);
+
+           /* FirebaseDatabase.DefaultInstance
+             .GetReference("/server_values/ServerTime")
+                 .ValueChanged += (object sender2, ValueChangedEventArgs e2) => {
+                     if (e2.DatabaseError != null) {
+                         Debug.LogError(e2.DatabaseError.Message);
+
+                         return;
+                     }
+
+                     if (e2.Snapshot != null) {
+
+                         Debug.Log( "ServerTime : " + e2.Snapshot.Value.ToString());
+                     }
+                 };  */
+
         }
 
 
