@@ -15,7 +15,7 @@ namespace com.surfm.firebase.geofire.test {
         //private GeoQuery query;
         //DependencyStatus dependencyStatus = DependencyStatus.UnavailableOther;
         void Start() {
-            init(ceneterLocation.getLocation, () => {
+            init("",ceneterLocation.getLocation, () => {
                 Debug.Log("TestManager inited");
                 ceneterLocation.onChangeAction = onCenterChange;
             });

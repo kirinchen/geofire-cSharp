@@ -9,7 +9,7 @@ using Firebase.Database;
 namespace com.surfm.firebase.geofire {
     public abstract class GeoFireManager : MonoBehaviour, GeoQueryEventListener {
 
-        public string geoFireUrl;
+        private string geoFireUrl;
         protected GeoFire geoFire;
         private GeoQuery query;
         private DependencyStatus dependencyStatus = DependencyStatus.UnavailableOther;
@@ -18,7 +18,8 @@ namespace com.surfm.firebase.geofire {
         public bool readyed { get; private set; }
         private Func<GeoLocation> centerFunc;
 
-        public void init(Func<GeoLocation> geoFunc, Action readyAction) {
+        public void init(string  geoFireUrl, Func<GeoLocation> geoFunc, Action readyAction) {
+            this.geoFireUrl = geoFireUrl;
             if (geoFunc == null) throw new NullReferenceException("geoFunc is empty");
             centerFunc = geoFunc;
             initFirebase();
