@@ -31,7 +31,7 @@ namespace com.surfm.firebase.geofire {
         public void onCenterLocationChange() {
            // Debug.Log("onCenterLocationChange");
             if (query == null) {
-                query = geoFire.queryAtLocation(centerFunc(), 1);
+                query = geoFire.queryAtLocation(centerFunc(), 99999);
                 query.addGeoQueryEventListener(this);
             } else {
                 query.setCenter(centerFunc());
