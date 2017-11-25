@@ -60,22 +60,6 @@ namespace com.surfm.firebase.geofire {
             app.SetEditorDatabaseUrl(geoFireUrl);
             if (app.Options.DatabaseUrl != null) app.SetEditorDatabaseUrl(app.Options.DatabaseUrl);
             geoFire = new GeoFire(FirebaseDatabase.DefaultInstance.GetReference("/geo"));
-
-           /* FirebaseDatabase.DefaultInstance
-             .GetReference("/server_values/ServerTime")
-                 .ValueChanged += (object sender2, ValueChangedEventArgs e2) => {
-                     if (e2.DatabaseError != null) {
-                         Debug.LogError(e2.DatabaseError.Message);
-
-                         return;
-                     }
-
-                     if (e2.Snapshot != null) {
-
-                         Debug.Log( "ServerTime : " + e2.Snapshot.Value.ToString());
-                     }
-                 };  */
-
         }
 
 
